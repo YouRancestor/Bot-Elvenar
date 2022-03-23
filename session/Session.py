@@ -1,9 +1,9 @@
+from hashlib import new
 import json
 import sqlite3
 from typing import List, Dict
 import requests
 import base64
-import hashlib
 
 import sys,os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,7 +29,24 @@ class Session:
         return self.cookies[domain]
 
     def get_json_gateway_url(self) -> str:
-        return "https://{}.elvenar.com/game/json?h={}".format(self.world_id, self.json_h)
+        return 'https://{}.elvenar.com/game/json?h={}'.format(self.world_id, self.json_h)
+    def get_ws_gateway_url(self) -> str:
+        return 'wss://{}.elvenar.com/ws/stomp'.format(self.world_id)
+    def get_ws_passcode(self) -> str:
+        # get ws passcode
+        index_page_url = 'https://{}.elvenar.com/game/index'.format(self.world_id, self.json_h)
+        request_with_cookie = Request()
+        request_with_cookie.set_url(index_page_url)
+        cookie = self.get_cookie('{}.elvenar.com'.format(self.world_id))
+        cookie.extend(self.get_cookie('en0.elvenar.com'))
+        request_with_cookie.set_cookies(cookie)
+        index_page = request_with_cookie.get() # /game/index
+        new_socket_start = index_page.text.find('new Socket')
+        first_comma = index_page.text.find(',', new_socket_start)
+        ws_passcod_start = index_page.text.find('\'', first_comma) + 1
+        ws_passcod_end = index_page.text.find('\'', ws_passcod_start)
+        return index_page.text[ws_passcod_start:ws_passcod_end]
+
 
     def get_post_request_id(self) -> int:
         id = self.post_request_id
@@ -110,6 +127,7 @@ class Session:
                 #         metricsUvId = item
                 # self.cookies[self.world_id+'.elvenar.com'].append(metricsUvId)
 
+                # get json gateway
                 json_gateway_url_index = next_response.text.find('json_gateway_url') # find json_gateway_url
                 json_start = next_response.text.rfind('{', 0 ,json_gateway_url_index)
                 json_end = next_response.text.find('}', json_gateway_url_index) + 1
@@ -122,6 +140,7 @@ class Session:
                 self.ws_gateway_url = base64.b64decode(b64_encoded_ws_gateway_url).decode()
 
                 def get_key(game_page) -> str:
+                    # get hash key
                     script_key_word_index = game_page.find('elvenar-ax3-release')
                     if script_key_word_index < 0:
                         raise 'version changed'
@@ -144,7 +163,7 @@ class Session:
                 self.save_to_file()
 
                 return True
-        except:
+        except Exception as e:
             conn = sqlite3.connect(db_file_name)
             cur = conn.cursor()
 
@@ -153,7 +172,7 @@ class Session:
             c = cur.execute(str_sql)
             conn.commit()
             conn.close()
-
+            print('Exception:{}'.format(repr(e)))
             print('Login game faild. Cache cleared.')
             return False
 
