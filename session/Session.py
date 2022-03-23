@@ -25,8 +25,11 @@ class Session:
         self.hash_key = ''
         self.post_request_id = 0
 
-    def get_cookies(self) -> dict:
-        return self.cookies
+    def get_cookie(self, domain) -> dict:
+        return self.cookies[domain]
+
+    def get_json_gateway_url(self) -> str:
+        return "https://{}.elvenar.com/game/json?h={}".format(self.world_id, self.json_h)
 
     def get_post_request_id(self) -> int:
         id = self.post_request_id
@@ -86,13 +89,14 @@ class Session:
         # self.save_to_file()
 
     # the second step
-    # @param world_id en1 or en2 or en3
+    # @param world_id 'en1' or 'en2' or 'en3'
     def login_game(self, world_id='en2'):
         self.world_id = world_id
         request = RequestLoginGame(self.world_id) # /play
         request.set_cookies(self.cookies['en0.elvenar.com'])
         response = request.post()
-        if response.status_code == 200:
+        # if response.status_code == 200:
+        try:
             di = json.loads(response.text)
             next_request_url = di['redirect']
             next_response = requests.get(next_request_url) # /game
@@ -117,8 +121,6 @@ class Session:
                 self.json_gateway_url = 'https:'+base64.b64decode(b64_encoded_json_gateway_url).decode()
                 self.ws_gateway_url = base64.b64decode(b64_encoded_ws_gateway_url).decode()
 
-                # test begin
-
                 def get_key(game_page) -> str:
                     script_key_word_index = game_page.find('elvenar-ax3-release')
                     if script_key_word_index < 0:
@@ -137,33 +139,12 @@ class Session:
                     key = script_src[key_start:key_end]
                     return key
 
-                di_request = [{
-                    '__clazz__': 'ServerRequestVO',
-                    'requestClass': 'TradeService',
-                    'requestData': [],
-                    'requestId': self.get_post_request_id(),
-                    'requestMethod': 'getOtherPlayersTrades'
-                }]
                 self.json_h = self.json_gateway_url[len('https:')+30:]
-                request_json_str = json.dumps(di_request, separators=(',', ':'))
                 self.hash_key = get_key(next_response.text)
                 self.save_to_file()
 
-                str_to_hash = (self.json_h + self.hash_key + request_json_str).encode()
-                body = hashlib.md5(str_to_hash).hexdigest()[0:10] + request_json_str
-
-
-                post_request = Request()
-                post_request.set_url(self.json_gateway_url)
-                post_request.set_cookies(self.cookies[self.world_id+'.elvenar.com'])
-                post_request.set_headers({'Content-Type': 'application/json'})
-                post_request.set_body(body)
-
-                post_response = post_request.post()
-                # test end
-        
                 return True
-        else:
+        except:
             conn = sqlite3.connect(db_file_name)
             cur = conn.cursor()
 
@@ -185,8 +166,7 @@ if __name__ == '__main__':
     if not sess.load_from_file():
         sess.login_account()
 
-    # cookies = sess.get_cookies()
-    # for key, value in cookies.items():
+    # for key, value in sess.cookies.items():
     #     print(key)
     #     for item in value:
     #         print(item)
