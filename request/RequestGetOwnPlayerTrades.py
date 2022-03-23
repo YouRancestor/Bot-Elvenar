@@ -7,7 +7,7 @@ from session.Session import Session
 
 
 
-class RequestGetOtherPlayerTrades(RequestPostJson):
+class RequestGetOwnPlayerTrades(RequestPostJson):
     def __init__(self, session: Session) -> None:
         super().__init__(session)
 
@@ -18,14 +18,14 @@ class RequestGetOtherPlayerTrades(RequestPostJson):
             'requestClass': 'TradeService',
             'requestData': [],
             'requestId': self.session.get_post_request_id(),
-            'requestMethod': 'getOtherPlayersTrades'
+            'requestMethod': 'getOwnPlayerTrades'
         }]
         return self.build_body(di_request)
 
 if __name__ == '__main__':
     sess = Session(sys.argv[1])
     if sess.load_from_file():
-        request = RequestGetOtherPlayerTrades(sess)
+        request = RequestGetOwnPlayerTrades(sess)
         response = request.post()
         di = json.loads(response.text)
         print(json.dumps(di, indent=4))
