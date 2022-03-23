@@ -27,5 +27,5 @@ if __name__ == '__main__':
     if sess.load_from_file():
         request = RequestGetOwnPlayerTrades(sess)
         response = request.post()
-        di = json.loads(response.text)
-        print(json.dumps(di, indent=4))
+        li = json.loads(response.text)
+        print(json.dumps(li, indent=4))
