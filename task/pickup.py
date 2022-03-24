@@ -1,4 +1,5 @@
 import json
+import signal
 import sys,os
 from time import sleep
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -120,15 +121,28 @@ def moniter_coin_and_supply(sess):
 
 
     # restart timer
+    global t
     t = threading.Timer(300, moniter_coin_and_supply, args=(sess,))
     t.start()
 
+
+
+old_sig_handler = signal.getsignal(signal.SIGINT)
+def _handler(signum, frame):
+    global t
+    if signum == signal.SIGINT:
+        t.cancel()
+        old_sig_handler(signum, frame)
+
 import threading
+t = None
 if __name__ == '__main__':
-    sess = Session(sys.argv[1], sys.argv[2])
+    sess = Session(sys.argv[1])
 
     if not sess.load_from_file():
         raise 'no session'
+
+    signal.signal(signal.SIGINT, _handler)
 
     t = threading.Timer(1, moniter_coin_and_supply, args=(sess,))
     t.start()
