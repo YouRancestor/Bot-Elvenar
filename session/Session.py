@@ -96,42 +96,62 @@ class Session:
 
     def cookie_to_str(self) -> str:
         return json.dumps(self.cookies)
+    
+    def del_db_item(self):
+        conn = sqlite3.connect(db_file_name)
+        cur = conn.cursor()
+
+        str_sql = "DELETE FROM {} WHERE username='{}'".format(table_name, self.username)
+
+        c = cur.execute(str_sql)
+        conn.commit()
+        conn.close()
 
     # the first step for new session
-    def login_account(self):
+    # @param world_id 'en1' or 'en2' or 'en3'
+    def login_account(self, world_id='en2'):
         if self.password is None:
             raise "no password"
         logger = BrowerSimulationLogger(self.username, self.password)
         self.cookies['en0.elvenar.com'] = logger.login_and_get_session_cookies()
-        # self.save_to_file()
 
-    # the second step
-    # @param world_id 'en1' or 'en2' or 'en3'
-    def login_game(self, world_id='en2'):
         self.world_id = world_id
         request = RequestLoginGame(self.world_id) # /play
         request.set_cookies(self.cookies['en0.elvenar.com'])
         response = request.post()
-        # if response.status_code == 200:
         try:
             di = json.loads(response.text)
             next_request_url = di['redirect']
             next_response = requests.get(next_request_url) # /game
-            if next_response.status_code == 200:
-                self.cookies[self.world_id+'.elvenar.com'] = []
-                for name, value in next_response.history[0].cookies.items():
-                    self.cookies[self.world_id+'.elvenar.com'].append({'name': name, 'value': value})
-                # self.cookies[self.world_id+'.elvenar.com'].append({'name': 'ig_conv_last_site', 'value': 'https://'+self.world_id+'.elvenar.com/game/index'})
-                # for item in self.cookies['en0.elvenar.com']:
-                #     if item['name'] == 'metricsUvId':
-                #         metricsUvId = item
-                # self.cookies[self.world_id+'.elvenar.com'].append(metricsUvId)
+            self.cookies[self.world_id+'.elvenar.com'] = []
+            for name, value in next_response.history[0].cookies.items():
+                self.cookies[self.world_id+'.elvenar.com'].append({'name': name, 'value': value})
+            # self.cookies[self.world_id+'.elvenar.com'].append({'name': 'ig_conv_last_site', 'value': 'https://'+self.world_id+'.elvenar.com/game/index'})
+            # for item in self.cookies['en0.elvenar.com']:
+            #     if item['name'] == 'metricsUvId':
+            #         metricsUvId = item
+            # self.cookies[self.world_id+'.elvenar.com'].append(metricsUvId)
+        except Exception as e:
+            self.del_db_item()
+            print('Exception:{}'.format(repr(e)))
+            print('Login account faild. Cache cleared.')
+            return False
 
+    # the second step
+    def login_game(self):
+        try:
+            game_url = 'https://{}.elvenar.com/game'.format(self.world_id)
+            cookies = self.get_cookie('{}.elvenar.com'.format(self.world_id))
+            request = Request()
+            request.set_url(game_url)
+            request.set_cookies(cookies)
+            response = request.get() # /game
+            if response.status_code == 200:
                 # get json gateway
-                json_gateway_url_index = next_response.text.find('json_gateway_url') # find json_gateway_url
-                json_start = next_response.text.rfind('{', 0 ,json_gateway_url_index)
-                json_end = next_response.text.find('}', json_gateway_url_index) + 1
-                json_str = next_response.text[json_start:json_end] # json string including json_gateway_url
+                json_gateway_url_index = response.text.find('json_gateway_url') # find json_gateway_url
+                json_start = response.text.rfind('{', 0 ,json_gateway_url_index)
+                json_end = response.text.find('}', json_gateway_url_index) + 1
+                json_str = response.text[json_start:json_end] # json string including json_gateway_url
                 json_str = json_str.replace('\'', '"')
                 di = json.loads(json_str)
                 b64_encoded_json_gateway_url = di['json_gateway_url']
@@ -159,19 +179,12 @@ class Session:
                     return key
 
                 self.json_h = self.json_gateway_url[len('https:')+30:]
-                self.hash_key = get_key(next_response.text)
+                self.hash_key = get_key(response.text)
                 self.save_to_file()
 
                 return True
         except Exception as e:
-            conn = sqlite3.connect(db_file_name)
-            cur = conn.cursor()
-
-            str_sql = "DELETE FROM {} WHERE username='{}'".format(table_name, self.username)
-
-            c = cur.execute(str_sql)
-            conn.commit()
-            conn.close()
+            self.del_db_item()
             print('Exception:{}'.format(repr(e)))
             print('Login game faild. Cache cleared.')
             return False
@@ -191,6 +204,7 @@ if __name__ == '__main__':
     #         print(item)
 
     sess.login_game()
-
+    passcode = sess.get_ws_passcode()
+    print(passcode)
 
 
