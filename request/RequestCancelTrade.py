@@ -1,5 +1,6 @@
 import json
 import sys,os
+import threading
 from typing import List
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -36,9 +37,16 @@ def clear_all_trades(sess: Session):
             li_trades = res['responseData']
 
     # cancel all trades, must one by one
+    def post_request(request: RequestPostJson):
+        request.post()
+    li_threads = []
     for trade in li_trades:
         request = RequestCancelTrade(sess, trade['id'])
-        response = request.post()
+        thr = threading.Thread(target=post_request, args=[request])
+        thr.start()
+        li_threads.append(thr)
+    for thr in li_threads:
+        thr.join()
 
 if __name__ == '__main__':
     sess = Session(sys.argv[1])
