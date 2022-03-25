@@ -118,7 +118,10 @@ def on_message(wsapp, message: str):
         print('connected')
         def heart_beat(wsapp, event):
             while not event.wait(5):
-                wsapp.send('\n')
+                try:
+                    wsapp.send('\n')
+                except:
+                    print('error: connection closed')
         event = threading.Event()
         thread = threading.Thread(target=heart_beat, args=(wsapp, event))
         thread.daemon = True
