@@ -32,10 +32,10 @@ GoodId = [
 ]
 
 class RequestCreateTrade(RequestPostJson):
-    def __init__(self, session: Session, sell: GoodType, sell_count: int, buy: GoodType, buy_count: int) -> None:
+    def __init__(self, session: Session, sell: str, sell_count: int, buy: str, buy_count: int) -> None:
         super().__init__(session)
-        self.buy_index = buy.value
-        self.sell_index = sell.value
+        self.buy_index = buy
+        self.sell_index = sell
         self.buy_count = buy_count
         self.sell_count = sell_count
 
@@ -46,12 +46,12 @@ class RequestCreateTrade(RequestPostJson):
             'requestData': [
                 {
                     '__clazz__': 'CityGoodVO',
-                    'good_id': GoodId[self.sell_index],
+                    'good_id': self.sell_index,
                     'value': self.sell_count,
                 },
                 {
                     '__clazz__': 'CityGoodVO',
-                    'good_id': GoodId[self.buy_index],
+                    'good_id': self.buy_index,
                     'value': self.buy_count,
                 }
             ],
@@ -63,7 +63,7 @@ class RequestCreateTrade(RequestPostJson):
 if __name__ == '__main__':
     sess = Session(sys.argv[1])
     if sess.load_from_file():
-        request = RequestCreateTrade(sess, GoodType.Gems, 5, GoodType.Elixir, 5)
+        request = RequestCreateTrade(sess, GoodId[GoodType.Gems.value], 5, GoodId[GoodType.Elixir.value], 5)
         response = request.post()
         di = json.loads(response.text)
         print(json.dumps(di, indent=4))
