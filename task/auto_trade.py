@@ -60,8 +60,11 @@ def accept_fellow_trades(sess: Session, guild_id: int):
     resouces = res_data[0]['responseData']['resources']
 
     for trade in trades:
-        if trade['trader']['guild_info']['id'] != guild_id:
-            continue
+        is_fellow_member = True
+        if 'guild_info' not in trade['trader']:
+            is_fellow_member = False
+        elif trade['trader']['guild_info']['id'] != guild_id:
+            is_fellow_member = False
 
         need_good_id = trade['need']['good_id']
         need_good_value = trade['need']['value']
@@ -81,6 +84,9 @@ def accept_fellow_trades(sess: Session, guild_id: int):
         ratio = offer_good_value / need_good_value
         tier_diff = need_tier - offer_tier
         reference_ratio = 1.5 ** tier_diff
+
+        if not is_fellow_member:
+            reference_ratio *= 1.01
 
         if ratio >= reference_ratio:
             # fair trade, accept

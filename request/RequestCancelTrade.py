@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from request.RequestPostJson import RequestPostJson
 from session.Session import Session
+from request.RequestGetOwnPlayerTrades import RequestGetOwnPlayerTrades
 
 
 
@@ -26,7 +27,6 @@ class RequestCancelTrade(RequestPostJson):
 
 def clear_all_trades(sess: Session):
     # query exsisting trades
-    from request.RequestGetOwnPlayerTrades import RequestGetOwnPlayerTrades
     request = RequestGetOwnPlayerTrades(sess)
     response = request.post()
     li_responses = json.loads(response.text)
