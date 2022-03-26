@@ -15,6 +15,8 @@ from request.RequestAcceptPlayerTrade import RequestAcceptPlayerTrade
 
 t = None
 
+scan_interval = 5
+
 class Schedule:
     def __init__(self) -> None:
         self.timer = None
@@ -96,7 +98,7 @@ def accept_fellow_trades(sess: Session, guild_id: int):
             place_unfair_trades(sess)
             break
 
-    t = threading.Timer(5, accept_fellow_trades, args=[sess, guild_id])
+    t = threading.Timer(scan_interval, accept_fellow_trades, args=[sess, guild_id])
     t.daemon = True
     t.start()
 
@@ -151,7 +153,7 @@ def on_message(wsapp, message: str):
                             t.cancel()
                             clear_all_trades(wsapp.sess)
                             place_unfair_trades(wsapp.sess)
-                            t = threading.Timer(5, accept_fellow_trades, args=[wsapp.sess, wsapp.guild_id])
+                            t = threading.Timer(scan_interval, accept_fellow_trades, args=[wsapp.sess, wsapp.guild_id])
                             t.daemon = True
                             t.start()
         elif isinstance(o, dict):
@@ -160,7 +162,7 @@ def on_message(wsapp, message: str):
                     if key.find('guild.') >= 0:
                         wsapp.guild_id = int(key[6:])
                         # global t
-                        t = threading.Timer(5, accept_fellow_trades, args=[wsapp.sess, wsapp.guild_id])
+                        t = threading.Timer(scan_interval, accept_fellow_trades, args=[wsapp.sess, wsapp.guild_id])
                         t.daemon = True
                         t.start()
                         break
