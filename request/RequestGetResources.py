@@ -32,4 +32,3 @@ if __name__ == '__main__':
 
 
 
-        print(li[0]['responseData']['resources'])

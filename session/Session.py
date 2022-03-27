@@ -23,7 +23,7 @@ class Session:
         self.world_id = 'en2'
         self.json_h = ''
         self.hash_key = ''
-        self.post_request_id = 0
+        self.post_request_id = 38
 
     def get_cookie(self, domain) -> dict:
         return self.cookies[domain]
