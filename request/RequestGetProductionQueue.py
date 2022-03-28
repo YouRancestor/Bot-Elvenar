@@ -7,17 +7,17 @@ from session.Session import Session
 
 
 
-class RequestAcceptPlayerTrade(RequestPostJson):
-    def __init__(self, session: Session, trade_id: int) -> None:
+class RequestGetProductionQueue(RequestPostJson):
+    def __init__(self, session: Session, entity_id: str) -> None:
         super().__init__(session)
-        self.trade_id = trade_id
+        self.entity_id = entity_id
 
     def get_body(self):
         di_request = [{
             '__clazz__': 'ServerRequestVO',
             'requestClass': 'CityProductionService',
             'requestData': [
-                self.trade_id
+                self.entity_id
             ],
             'requestId': self.session.get_post_request_id(),
             'requestMethod': 'getProductionQueue'
@@ -27,10 +27,8 @@ class RequestAcceptPlayerTrade(RequestPostJson):
 if __name__ == '__main__':
     sess = Session(sys.argv[1])
     if sess.load_from_file():
-        request = RequestAcceptPlayerTrade(sess, 79621780)
+        request = RequestGetProductionQueue(sess, "training_grounds_production")
         response = request.post()
         li = json.loads(response.text)
         print(json.dumps(li, indent=4))
 
-
-[{"requestId":45,"requestMethod":"getProductionQueue","requestClass":"CityProductionService","requestData":["training_grounds_production"],"__clazz__":"ServerRequestVO"}]
